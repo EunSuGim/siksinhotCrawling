@@ -36,11 +36,23 @@ class Parsing :
             holiday = soup.select_one('div.txt_holiday > dl > dd > span')
             parking = soup.select_one('li.info_li04')
 
+            openTime = soup.select_one('ul.fLeft')
+
+            if openTime:
+                openDay = openTime.select_one('span.tit')
+                openHour = openTime.select_one('label')
+            else :
+                openDay = None
+                openHour = None
+
+
+            openDay = om.exist(openDay)
+            openHour = om.exist(openHour)
             phone = om.exist(phone)
             holiday = om.exist(holiday)
             parking = om.existparking(parking)
 
-            results.append(om.saveData(cd,title,address,category,menuName,menuPrice,phone,parking,holiday))
+            results.append(om.saveData(cd,title,address,category,menuName,menuPrice,phone,parking,holiday,openDay,openHour))
 
             urllib.request.urlretrieve(img,'./data/image/' + "{}.jpg".format(cd))
 
@@ -57,7 +69,7 @@ class Parsing :
 
 class objectmanagements():
 
-    def saveData(self, cd, title, address, category, menuName, menuPrice, phone, parking, holiday):
+    def saveData(self, cd, title, address, category, menuName, menuPrice, phone, parking, holiday,openDay,openHour):
         container = dict()
 
         container['cd'] = cd
@@ -69,7 +81,8 @@ class objectmanagements():
         container['phone'] = phone
         container['parking'] = parking
         container['holiday'] = holiday
-
+        container['openDay'] = openDay
+        container['openHour'] = openHour
         return container
 
 
@@ -77,7 +90,7 @@ class objectmanagements():
     def exist(self, object):
 
         if object == None :
-            object = "모름"
+            object = "None"
         else :
             object = object.text
 
@@ -91,6 +104,6 @@ class objectmanagements():
             else:
                 object = 'x'
         else:
-            object = '모름'
+            object = 'None'
 
         return object
