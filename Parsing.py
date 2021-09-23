@@ -1,6 +1,9 @@
+import os
+
 from Connect import *
 
 import urllib.request
+import os
 
 from bs4 import BeautifulSoup
 from pprint import pprint
@@ -8,6 +11,11 @@ from pprint import pprint
 
 class Parsing :
 
+    '''
+        데이터 파싱 작업 함수
+        parameter : restaurantsInfo
+        return : Array 결과값
+    '''
     def parsingInfo(self, restaurantsInfo):
 
         pprint("parsing 시작")
@@ -17,12 +25,13 @@ class Parsing :
         results = []
 
         for info in restaurantsInfo :
-            cd =info[0].replace("/P/","")
+            numbering =info[0].replace("/P/","")
             img =info[1]
             connect(info[0])
 
             html_source = driver.page_source
             soup = BeautifulSoup(html_source, 'html.parser')
+
 
             category = soup.head.find("meta",{"name" : "article:section3"}).get('content')
             if not "초밥" in category:
@@ -32,29 +41,34 @@ class Parsing :
             address = soup.head.find("meta", {"property" : "restaurant:contact_info:street_address"}).get('content')
             menuName = [menu.text for menu in soup.select("ul.menu_ul > li > span.tit")]
             menuPrice = [price.text for price in soup.select("ul.menu_ul > li > p > span > em > label")]
-            phone =  soup.select_one('div.p_tel > p')
+            tellNumber =  soup.select_one('div.p_tel > p')
             holiday = soup.select_one('div.txt_holiday > dl > dd > span')
             parking = soup.select_one('li.info_li04')
 
             openTime = soup.select_one('ul.fLeft')
 
             if openTime:
-                openDay = openTime.select_one('span.tit')
-                openHour = openTime.select_one('label')
+                openingDay = openTime.select_one('span.tit')
+                openingHour = openTime.select_one('label')
             else :
-                openDay = None
-                openHour = None
+                openingDay = None
+                openingHour = None
 
 
-            openDay = om.exist(openDay)
-            openHour = om.exist(openHour)
-            phone = om.exist(phone)
+            slideImgTag = soup.select('div.slick-track > li > a')
+            slideImg = [tmp.find('img')['src'] for tmp in slideImgTag]
+
+
+            openingDay = om.exist(openingDay)
+            openingHour = om.exist(openingHour)
+            tellNumber = om.exist(tellNumber)
             holiday = om.exist(holiday)
             parking = om.existparking(parking)
 
-            results.append(om.saveData(cd,title,address,category,menuName,menuPrice,phone,parking,holiday,openDay,openHour))
+            results.append(om.saveData(numbering,title,address,category,menuName,menuPrice,tellNumber,parking,holiday,openingDay,openingHour))
 
-            urllib.request.urlretrieve(img,'./data/image/' + "{}.jpg".format(cd))
+            om.imgDownload(info,slideImg)
+
 
 
 
@@ -65,28 +79,59 @@ class Parsing :
 
 
 
-
-
+'''
+   데이터 관리 클래스 
+'''
 class objectmanagements():
 
-    def saveData(self, cd, title, address, category, menuName, menuPrice, phone, parking, holiday,openDay,openHour):
+    '''
+        데이터 저장 함수
+        parameter : 저장할려는 데이터
+        return : dict 결과값
+    '''
+    def saveData(self, numbering, title, address, category, menuName, menuPrice, tellNumber, parking, holiday,openingDay,openingHour):
         container = dict()
 
-        container['cd'] = cd
+        container['numbering'] = numbering
         container['title'] = title
         container['address'] = address
         container['category'] = category
         container['menuName'] = menuName
         container['menuPrice'] = menuPrice
-        container['phone'] = phone
+        container['tellNumber'] = tellNumber
         container['parking'] = parking
         container['holiday'] = holiday
-        container['openDay'] = openDay
-        container['openHour'] = openHour
+        container['openingDay'] = openingDay
+        container['openingHour'] = openingHour
         return container
 
+    '''
+        이미지 다운로드 함수
+        parameter : 섬네일이미지정보, slide이미지정보
+        return : None
+    '''
+    def imgDownload(self, info, slideImg):
+        numbering =info[0].replace("/P/","")
+        img =info[1]
+        count = 1
+
+        path = './data/image/{numbering}'.format(numbering=numbering)
+
+        if not os.path.isdir(path) :
+            os.makedirs(path)
+
+        urllib.request.urlretrieve(img, './data/image/{numbering}/thumbnail.jpg'.format(numbering=numbering))
+
+        for tmp in slideImg :
+            urllib.request.urlretrieve(tmp, './data/image/{numbering}/slide_{count}.jpg'.format(numbering=numbering, count=count))
+            count += 1
 
 
+    '''
+        None 데이터 정제 함수
+        parameter : 정제할 데이터
+        return : 정제된 데이터
+    '''
     def exist(self, object):
 
         if object == None :
@@ -96,6 +141,11 @@ class objectmanagements():
 
         return object
 
+    '''
+        주차여부판단 함수
+        parameter : 주차데이터
+        return : 정제된 데이터
+    '''
     def existparking(self, object):
 
         if object != None:
