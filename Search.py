@@ -12,6 +12,11 @@ class Search :
     def __init__(self):
         initpage()
 
+    '''
+        오마카세 식당리스트 서치 함수
+        parameter : None
+        return : Array 식당리스트
+    '''
     def searching(self):
         pprint("searching 시작")
         driver.find_element_by_css_selector('.focusIn').send_keys('오마카세')
